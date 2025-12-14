@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="icon" href="door.png" type="image/png">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Door Status Monitor</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="door-status-container">
+        <div class="status-header">
+            <h2><i class="fas fa-door-closed"></i> Door Status Monitor</h2>
+            <p>Real-time monitoring system</p>
+        </div>
+        
+        <div id="door-status-card" class="status-loading">
+            <div class="door-graphic">
+                <i class="fas fa-door-closed"></i>
+            </div>
+            <div class="status-content">
+                <div class="status-icon">
+                    <i class="fas fa-spinner fa-spin"></i>
+                </div>
+                <div class="status-text">Loading...</div>
+                <div class="status-subtext">Connecting to sensor</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer outside the card -->
+    <footer class="site-footer">
+        <a href="https://youness-el-kabtane.github.io/site/" target="_blank">
+            <i class="fab fa-github"></i>
+        </a>
+    </footer>
+
+    <script>
+        const statusCard = document.getElementById('door-status-card');
+        const statusContent = statusCard.querySelector('.status-content');
+        const doorGraphic = statusCard.querySelector('.door-graphic i');
+
+        const refreshBtn = document.getElementById('refresh-btn');
+
+        const apiUrl = "https://script.google.com/macros/s/AKfycbxxjv19TKbNpX8sbMwYSFsXQKDGcPvYXm3bO7M4SE9uV7AderbRDFKKLZHNaDEhpASRDw/exec?mode=read";
+
+        function getCurrentTime() {
+            const now = new Date();
+            return now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        }
+
+        async function updateStatus() {
+            try {
+                statusCard.className = "status-loading";
+                statusContent.innerHTML = `
+                    <div class="status-icon">
+                        <i class="fas fa-spinner fa-spin"></i>
+                    </div>
+                    <div class="status-text">Loading...</div>
+                    <div class="status-subtext">Checking door status</div>
+                `;
+
+                const res = await fetch(apiUrl);
+                const status = (await res.text()).trim();
+
+                if (status === "OPEN") {
+                    statusCard.className = "status-open";
+                    doorGraphic.className = "fas fa-door-open";
+                    statusContent.innerHTML = `
+                        <div class="status-icon">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </div>
+                        <div class="status-text">ALERT! DOOR OPEN</div>
+                        <div class="status-subtext">Last updated: ${getCurrentTime()}</div>
+                    `;
+                } else if (status === "CLOSED") {
+                    statusCard.className = "status-closed";
+                    doorGraphic.className = "fas fa-door-closed";
+                    statusContent.innerHTML = `
+                        <div class="status-icon">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                        <div class="status-text">DOOR CLOSED</div>
+                        <div class="status-subtext">Last updated: ${getCurrentTime()}</div>
+                    `;
+                } else {
+                    statusCard.className = "status-error";
+                    doorGraphic.className = "fas fa-door-closed";
+                    statusContent.innerHTML = `
+                        <div class="status-icon">
+                            <i class="fas fa-question-circle"></i>
+                        </div>
+                        <div class="status-text">UNKNOWN STATUS</div>
+                        <div class="status-subtext">Received: "${status}"</div>
+                    `;
+                }
+            } catch (err) {
+                statusCard.className = "status-error";
+                doorGraphic.className = "fas fa-door-closed";
+                statusContent.innerHTML = `
+                    <div class="status-icon">
+                        <i class="fas fa-exclamation-circle"></i>
+                    </div>
+                    <div class="status-text">CONNECTION ERROR</div>
+                    <div class="status-subtext">Failed to fetch status</div>
+                `;
+                console.error('Error fetching door status:', err);
+            }
+        }
+
+        updateStatus();
+        setInterval(updateStatus, 10000);
+    </script>
+</body>
+</html>
